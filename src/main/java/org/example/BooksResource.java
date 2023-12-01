@@ -117,11 +117,56 @@ public class BooksResource {
     @GET
     @Path("/title/{title}")
     @Produces("application/json")
-    public Response getBookbyTitle(@PathParam("title") String title) {
+    public Response getBooksbyTitle(@PathParam("title") String title) {
         List<Book> books = new ArrayList<>();
         try (Connection connection = DatabaseManager.getConnection();
              PreparedStatement pst = connection.prepareStatement("SELECT * FROM books WHERE title LIKE ?")) {
             pst.setString(1, "%"+ title + "%");
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    Book book = new Book(
+                            rs.getInt("id"),
+                            rs.getString("title"),
+                            rs.getString("author"),
+                            rs.getInt("price"),
+                            rs.getInt("quantity")
+                    );
+                    books.add(book);
+                }
+                DatabaseManager.closeConnection(connection);
+                StringBuilder json = new StringBuilder("[");
+                boolean first = true;
+                for (Book book : books) {
+                    if (!first) {
+                        json.append(",");
+                    }
+                    json.append("{\"id\": ").append(book.getId())
+                            .append(", \"title\": \"").append(book.getTitle())
+                            .append("\", \"author\": \"").append(book.getAuthor())
+                            .append("\", \"price\": ").append(book.getPrice())
+                            .append(", \"quantity\": ").append(book.getQuantity())
+                            .append("}");
+                    first = false;
+                }
+                json.append("]");
+                return Response.ok(json.toString(), MediaType.APPLICATION_JSON).build();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error connecting to the database");
+            e.printStackTrace();
+        }
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+    @GET
+    @Path("/author/{author}")
+    @Produces("application/json")
+    public Response getBooksbyAuthor(@PathParam("author") String author) {
+        List<Book> books = new ArrayList<>();
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement pst = connection.prepareStatement("SELECT * FROM books WHERE author LIKE ?")) {
+            pst.setString(1, "%"+ author + "%");
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {
                     Book book = new Book(
