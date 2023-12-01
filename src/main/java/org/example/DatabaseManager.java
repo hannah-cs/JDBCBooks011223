@@ -33,8 +33,4 @@ public class DatabaseManager {
             System.err.println("Connection failed: " + e.getMessage());
         }
     }
-
-    public static void main(String[] args) {
-        testConnection();
-    }
 }
