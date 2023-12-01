@@ -23,4 +23,18 @@ public class DatabaseManager {
             }
         }
     }
+
+    public static void testConnection() {
+        try {
+            Connection connection = getConnection();
+            System.out.println("Connected successfully");
+            closeConnection(connection);
+        } catch (SQLException e) {
+            System.err.println("Connection failed: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        testConnection();
+    }
 }
