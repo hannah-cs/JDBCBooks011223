@@ -284,9 +284,39 @@ public class BooksResource {
             return count > 0;
         }
     }
+
+    @DELETE
+    @Produces("application/json")
+    @Path("/delete/{id}")
+    public Response deleteBook(@PathParam("id") int id){
+        try {
+            Connection connection = DatabaseManager.getConnection();
+
+            if (bookExists(id, connection)) {
+                String updateQuery = "DELETE FROM books WHERE id = ?";
+                try (PreparedStatement updateStatement = connection.prepareStatement(updateQuery)) {
+                    updateStatement.setInt(1, id);
+                    int rowsAffected = updateStatement.executeUpdate();
+                    DatabaseManager.closeConnection(connection);
+
+                    if (rowsAffected > 0) {
+                        return Response.ok("Book deleted successfully", MediaType.APPLICATION_JSON).build();
+                    } else {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                .entity("Failed to delete book").build();
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                DatabaseManager.closeConnection(connection);
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Book with ID " + id + " not found").build();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error connecting to the database");
+            e.printStackTrace();
+        }
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
 }
-//    @DELETE
-//    @Path("/{id}")
-//    public void deleteBook(@PathParam("id") int id) {
-//
-//    }
