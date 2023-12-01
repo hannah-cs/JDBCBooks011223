@@ -204,27 +204,42 @@ public class BooksResource {
         }
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
+
+    @POST
+    @Produces("application/json")
+    public Response createBook(
+            @FormParam("title") String title,
+            @FormParam("author") String author,
+            @FormParam("price") double price,
+            @FormParam("quantity") int quantity) {
+
+        try {
+            Connection connection = DatabaseManager.getConnection();
+
+            String query = "INSERT INTO books (title, author, price, quantity) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = connection.prepareStatement(query)) {
+                pst.setString(1, title);
+                pst.setString(2, author);
+                pst.setDouble(3, price);
+                pst.setInt(4, quantity);
+                int rowsAffected = pst.executeUpdate();
+                DatabaseManager.closeConnection(connection);
+                if (rowsAffected > 0) {
+                    return Response.ok("Book created successfully", MediaType.APPLICATION_JSON).build();
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to create book").build();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error connecting to the database");
+            e.printStackTrace();
+        }
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
 }
 
-
-//    @GET
-//    @Path("/{title}")
-//    @Produces("application/json")
-//    public void getBooksbyTitle(String title){
-//
-//    }
-//    @GET
-//    @Path("/{author}")
-//    @Produces("application/json")
-//    public void getBooksbyAuthor(String author){
-//
-//    }
-//
-//    @POST
-//    @Consumes("application/json")
-//    public void addBook(String bookData) {
-//
-//    }
 //    @PUT
 //    @Path("/{id}")
 //    @Consumes("application/json")
