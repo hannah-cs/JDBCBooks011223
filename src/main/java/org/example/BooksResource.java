@@ -207,21 +207,17 @@ public class BooksResource {
 
     @POST
     @Produces("application/json")
-    public Response createBook(
-            @FormParam("title") String title,
-            @FormParam("author") String author,
-            @FormParam("price") double price,
-            @FormParam("quantity") int quantity) {
+    public Response createBook(Book newBook) {
 
         try {
             Connection connection = DatabaseManager.getConnection();
 
             String query = "INSERT INTO books (title, author, price, quantity) VALUES (?, ?, ?, ?)";
             try (PreparedStatement pst = connection.prepareStatement(query)) {
-                pst.setString(1, title);
-                pst.setString(2, author);
-                pst.setDouble(3, price);
-                pst.setInt(4, quantity);
+                pst.setString(1, newBook.getTitle());
+                pst.setString(2, newBook.getAuthor());
+                pst.setDouble(3, newBook.getPrice());
+                pst.setInt(4, newBook.getQuantity());
                 int rowsAffected = pst.executeUpdate();
                 DatabaseManager.closeConnection(connection);
                 if (rowsAffected > 0) {
@@ -238,14 +234,57 @@ public class BooksResource {
         }
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
-}
 
-//    @PUT
-//    @Path("/{id}")
-//    @Consumes("application/json")
-//    public void updateBook(@PathParam("id") int id, String bookData) {
-//
-//    }
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateBook(Book updatedBook) {
+        try {
+            Connection connection = DatabaseManager.getConnection();
+
+            if (bookExists(updatedBook.getId(), connection)) {
+                String updateQuery = "UPDATE books SET title=?, author=?, price=?, quantity=? WHERE id=?";
+                try (PreparedStatement updateStatement = connection.prepareStatement(updateQuery)) {
+                    updateStatement.setString(1, updatedBook.getTitle());
+                    updateStatement.setString(2, updatedBook.getAuthor());
+                    updateStatement.setDouble(3, updatedBook.getPrice());
+                    updateStatement.setInt(4, updatedBook.getQuantity());
+                    updateStatement.setInt(5, updatedBook.getId());
+                    int rowsAffected = updateStatement.executeUpdate();
+                    DatabaseManager.closeConnection(connection);
+
+                    if (rowsAffected > 0) {
+                        return Response.ok("Book updated successfully", MediaType.APPLICATION_JSON).build();
+                    } else {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                .entity("Failed to update book").build();
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                DatabaseManager.closeConnection(connection);
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Book with ID " + updatedBook.getId() + " not found").build();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error connecting to the database");
+            e.printStackTrace();
+        }
+
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+    private boolean bookExists(int bookId, Connection connection) throws SQLException {
+        String checkQuery = "SELECT COUNT(*) FROM books WHERE id=?";
+        try (PreparedStatement checkStatement = connection.prepareStatement(checkQuery)) {
+            checkStatement.setInt(1, bookId);
+            ResultSet resultSet = checkStatement.executeQuery();
+            resultSet.next();
+            int count = resultSet.getInt(1);
+            return count > 0;
+        }
+    }
+}
 //    @DELETE
 //    @Path("/{id}")
 //    public void deleteBook(@PathParam("id") int id) {
